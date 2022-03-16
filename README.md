@@ -36,7 +36,7 @@
 2. class PortData 裡的init多加一個self.delay = 0  
 ![](https://i.imgur.com/E9RPmRz.png)
 3. 在lldp_packet_in_handler開頭先新增一行code : recv_timestamp = time.time()
-4. 將fix版本code的714行後的get the lldp delay code 複製
+4. 將fix版本code的714行後的get the lldp delay code 複製  
 ![image](https://user-images.githubusercontent.com/69691891/145552471-a11fbc18-a494-4e34-982c-6e88a861a27a.png)
 5. 將剛剛複製好的code貼到791行
 6. 上述動作執行完成後，回到ryu資料夾並執行python3 setup.py install
@@ -45,7 +45,7 @@
 
 建議將mininet主機以及controller主機分開
 
-使用 ryu-manager --observe-link simple_monitor.py 執行controller
+使用 ryu-manager --observe-link simple_monitor.py 執行controller  
 執行myDRL使用RL agent進行轉發路徑的學習
 
 
