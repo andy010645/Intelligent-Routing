@@ -25,8 +25,7 @@ class simple_Delay(app_manager.RyuApp):
     def __init__(self, *args, **kwargs):
         super(simple_Delay, self).__init__(*args, **kwargs)
         self.name = "delay"
-        self.sending_echo_request_interval = 0.1 #rl
-        # self.sending_echo_request_interval = 0.1 #drl
+        self.sending_echo_request_interval = 0.1
         self.sw_module = lookup_service_brick('switches')
         self.awareness = lookup_service_brick('awareness')
         self.datapaths = {}
