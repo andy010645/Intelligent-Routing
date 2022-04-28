@@ -25,7 +25,7 @@ class simple_Delay(app_manager.RyuApp):
     def __init__(self, *args, **kwargs):
         super(simple_Delay, self).__init__(*args, **kwargs)
         self.name = "delay"
-        self.sending_echo_request_interval = 0.1
+        self.sending_echo_request_interval = 0.01
         self.sw_module = lookup_service_brick('switches')
         self.awareness = lookup_service_brick('awareness')
         self.datapaths = {}
@@ -50,6 +50,7 @@ class simple_Delay(app_manager.RyuApp):
                 self.logger.debug('Unregister datapath: %016x', datapath.id)
                 del self.datapaths[datapath.id]
 
+
     def _detector(self):
         """
             Delay detecting functon.
@@ -64,7 +65,7 @@ class simple_Delay(app_manager.RyuApp):
             # except:
             #     self.awareness = lookup_service_brick('awareness')
             if self.awareness is not None:
-                # self.get_link_delay()
+                self.get_link_delay()
                 self.show_delay_statis()
             hub.sleep(setting.DELAY_DETECTING_PERIOD)# + (setting.MONITOR_PERIOD - MONITOR_PERIOD))
 
@@ -84,7 +85,6 @@ class simple_Delay(app_manager.RyuApp):
             # generate a lot of echo reply almost in the same time.
             # which will generate a lot of delay of waiting in queue
             # when processing echo reply in echo_reply_handler.
-
             hub.sleep(self.sending_echo_request_interval)
 
     @set_ev_cls(ofp_event.EventOFPEchoReply, MAIN_DISPATCHER)
@@ -160,6 +160,7 @@ class simple_Delay(app_manager.RyuApp):
             Explore LLDP packet and get the delay of link (fwd and reply).
         """
         msg = ev.msg
+        #print(msg.datapath.id)
         try:
             src_dpid, src_port_no = LLDPPacket.lldp_parse(msg.data)
             dpid = msg.datapath.id
@@ -169,6 +170,7 @@ class simple_Delay(app_manager.RyuApp):
             for port in self.sw_module.ports.keys():
                 if src_dpid == port.dpid and src_port_no == port.port_no:
                     delay = self.sw_module.ports[port].delay
+                    #print(port,"\t",delay)
                     self._save_lldp_delay(src=src_dpid, dst=dpid,
                                           lldpdelay=delay)
         except LLDPPacket.LLDPUnknownFormat as e:

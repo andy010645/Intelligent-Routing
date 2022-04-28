@@ -27,7 +27,6 @@ def DRL_thread():
     epsilon_final = 0.01
     epsilon = 0.1
     action_memory = np.zeros((24,24))
-    reward_memory = np.zeros((24,24))
     state_memory = np.zeros((24,24))
     reward_list = []
     print("Start learning")
@@ -49,10 +48,10 @@ def DRL_thread():
                     action,q_value = brain[i][j].get_action([state],epsilon)
                     action_memory[i][j] = action
                     drl_paths[str(i)][str(j)] = [all_path_list[i][j][action]]
-
                     if len(brain[i][j].memory) > brain[i][j].batch_size:
+                        
                         brain[i][j].update()
-                        if step % 50 == 0:
+                        if step % 25 == 0:
                             print("network update")
                             brain[i][j].update_target()
                         if step % 2000 == 0:
@@ -73,8 +72,8 @@ def DRL_thread():
         f.close()
         print("------------------------------------------ step %d ------------------------------------------" % step)
         print("------------------------------------------  epsilon  %f ------------------------------------------   " % epsilon)
-        if time_end - time_in < setting.MONITOR_PERIOD :
-            time.sleep(setting.MONITOR_PERIOD - (time_end - time_in)) # wait for monitor period
+        if time_end - time_in < 10 :
+            time.sleep(10 - (time_end - time_in)) # wait for monitor period
         if epsilon > epsilon_final:
             epsilon -= (epsilon_ini - epsilon_final)/2000
 
@@ -95,7 +94,6 @@ def DRL_thread_rank():
     epsilon_final = 0.01
     epsilon = 0.1
     action_memory = np.zeros((24,24))
-    reward_memory = np.zeros((24,24))
     state_memory = np.zeros((24,24))
     reward_list = []
     print("Start learning")

@@ -6,7 +6,6 @@ import time
 from ryu import cfg
 from ryu.base import app_manager
 from ryu.controller import ofp_event
-# from ryu.base.app_manager import lookup_service_brick
 from ryu.controller.handler import MAIN_DISPATCHER
 from ryu.controller.handler import CONFIG_DISPATCHER
 from ryu.controller.handler import DEAD_DISPATCHER
@@ -22,7 +21,6 @@ from ryu.topology.api import get_switch, get_link
 
 import setting
 import json,ast
-# import simple_monitor
 
 
 CONF = cfg.CONF
@@ -67,9 +65,12 @@ class simple_Awareness(app_manager.RyuApp):
     
         time.sleep(self.initiation_delay)
         self.get_topology(None)
-        #self.show_topology()
 
-
+# ------------------------------------table-miss----------------------------------------
+# --------------------------------------------------------------------------------------
+#
+#     Install table-miss flow entry to datapaths.
+# 
     def add_flow(self, dp, priority, match, actions, idle_timeout=0, hard_timeout=0):
         ofproto = dp.ofproto
         parser = dp.ofproto_parser
@@ -82,10 +83,7 @@ class simple_Awareness(app_manager.RyuApp):
         dp.send_msg(mod)
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
-    def switch_features_handler(self, ev):
-        """
-            Install table-miss flow entry to datapaths.
-        """       
+    def switch_features_handler(self, ev):    
         datapath = ev.msg.datapath
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
@@ -94,6 +92,8 @@ class simple_Awareness(app_manager.RyuApp):
         actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                           ofproto.OFPCML_NO_BUFFER)]
         self.add_flow(datapath, 0, match, actions)
+#--------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------
 
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
@@ -127,11 +127,7 @@ class simple_Awareness(app_manager.RyuApp):
 
     @set_ev_cls(events)
     def get_topology(self, ev):
-        """
-            Get topology info and calculate shortest paths.
-            Note: In looped network, we should get the topology
-            20 or 30 seconds after the network went up.
-        """
+
         present_time = time.time()
         if present_time - self.start_time < self.initiation_delay: #Set to 30s
             return
@@ -241,48 +237,3 @@ class simple_Awareness(app_manager.RyuApp):
                 self.access_table.setdefault((dpid, in_port), None)
                 self.access_table[(dpid, in_port)] = (ip, mac)
                 return
-
-
-    def show_topology(self):
-        # print(self.shortest_paths)
-
-        if self.pre_link_to_port != self.link_to_port:# and setting.TOSHOW:
-            # It means the link_to_port table has changed.
-            
-            _graph = self.graph.copy()
-
-            # print "\n---------------------Link Port---------------------"
-            # print '%6s' % ('switch'),
-            # for node in sorted([node for node in _graph.nodes()], key=lambda node: node):
-            #     print '%6d' % node,
-            # print
-            # for node1 in sorted([node for node in _graph.nodes()], key=lambda node: node):
-            #     print '%6d' % node1,
-            #     for node2 in sorted([node for node in _graph.nodes()], key=lambda node: node):
-            #         if (node1, node2) in self.link_to_port.keys():
-            #             print '%6s' % str(self.link_to_port[(node1, node2)]),
-            #         else:
-            #             print '%6s' % '/',
-            #     print
-            # print
-            
-
-            self.pre_link_to_port = self.link_to_port.copy()
-
-        if self.pre_access_table != self.access_table:# and setting.TOSHOW:
-            # It means the access_table has changed.
-            print ("\n----------------Access Host-------------------")
-            print ('%10s' % 'switch', '%10s' % 'port', '%22s' % 'Host')
-            if not self.access_table.keys():
-                print ("    NO found host")
-            else:
-                for sw in sorted(self.access_table.keys()):
-                    print ('%10d' % sw[0], '%10d      ' % sw[1], self.access_table[sw])
-            print
-            self.pre_access_table = self.access_table.copy()
-            # print 'list of shortest_paths:\n {0}'.format(self.shortest_paths)
-
-        # nx.draw(self.graph)
-        # plt.show()
-        # plt.savefig("./%d.png" % int(time.time()))
-

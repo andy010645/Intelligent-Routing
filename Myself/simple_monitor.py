@@ -74,7 +74,6 @@ class simple_Monitor(app_manager.RyuApp):
         while True:
             s_time = time.time()  # start timestamp
             self.count_monitor += 1
-            self.stats['flow'] = {}
             self.stats['port'] = {}
             print("[Statistics Module Ok]")
             print("[{0}]".format(self.count_monitor))
@@ -108,6 +107,7 @@ class simple_Monitor(app_manager.RyuApp):
             d_time = time.time() - s_time
             hub.sleep(setting.MONITOR_PERIOD - d_time)
 
+#------------------------------------------------------------------------------------
 #---------------------FLOW INSTALLATION MODULE FUNCTIONS ----------------------------
     def flow_install_monitor(self): 
         print("[Flow Installation Ok]")
@@ -129,35 +129,20 @@ class simple_Monitor(app_manager.RyuApp):
             Get paths and install them into datapaths.
         """
         self.installed_paths.setdefault(dpid, {})
-        # print('\ndpid: {0}'.format(dpid))
-        # print ("@@@@@@2 Looking ip_src {0} and ip_dst {1}".format(ip_src,ip_dst))
-        # print("@@@@@@@1",src_sw, dst_sw)
-        path = self.get_path(str(src_sw), str(dst_sw)) #changed to str cuz the json convertion
+        path = self.get_path(str(src_sw), str(dst_sw))
         self.installed_paths[src_sw][dst_sw] = path 
-        # print("[PATH]{0}<-->{1}: {2}".format(ip_src, ip_dst, path))
         flow_info = (ip_src, ip_dst)
-        # flow_info = (eth_type, ip_src, ip_dst, in_port)
-        # install flow entries to datapath along the path
         self.install_flow(self.datapaths, self.awareness.link_to_port, path, flow_info)
 
-    def get_k_paths(self):
-        file = './Routing/k_paths.json'
-        with open(file,'r') as json_file:
-            k_shortest_paths = json.load(json_file)
-            k_shortest_paths = ast.literal_eval(json.dumps(k_shortest_paths))      
-        print("[k_paths OK]")
-        return k_shortest_paths
-
-    def request_stats(self, datapath):
-        self.logger.debug('send stats request: %016x', datapath.id)
-        ofproto = datapath.ofproto
-        parser = datapath.ofproto_parser 
-        req = parser.OFPPortDescStatsRequest(datapath, 0) # for port description 
-        datapath.send_msg(req)
-        # req = parser.OFPFlowStatsRequest(datapath) #individual flow statistics
-        # datapath.send_msg(req)
-        req = parser.OFPPortStatsRequest(datapath, 0, ofproto.OFPP_ANY) 
-        datapath.send_msg(req)
+    def get_path(self, src, dst):
+        
+            if self.paths != None:
+                path = self.paths.get(src).get(dst)[0]
+                return path
+            else:
+                paths = self.get_dRL_paths()
+                path = paths.get(src).get(dst)[0]
+                return path
 
     def install_flow(self, datapaths, link_to_port, path,
                      flow_info, data=None):
@@ -221,6 +206,27 @@ class simple_Monitor(app_manager.RyuApp):
         end_time_install = time.time()
         total_install = end_time_install - init_time_install
         # print("Time install", total_install)
+#------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------
+
+    def get_k_paths(self):
+        file = './Routing/k_paths.json'
+        with open(file,'r') as json_file:
+            k_shortest_paths = json.load(json_file)
+            k_shortest_paths = ast.literal_eval(json.dumps(k_shortest_paths))      
+        print("[k_paths OK]")
+        return k_shortest_paths
+
+    def request_stats(self, datapath):
+        self.logger.debug('send stats request: %016x', datapath.id)
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser 
+        req = parser.OFPPortDescStatsRequest(datapath, 0) # for port description 
+        datapath.send_msg(req)
+        req = parser.OFPPortStatsRequest(datapath, 0, ofproto.OFPP_ANY) 
+        datapath.send_msg(req)
+
+    
 
     def send_flow_mod(self, datapath, flow_info, src_port, dst_port):
         """
@@ -317,15 +323,7 @@ class simple_Monitor(app_manager.RyuApp):
              (src_dpid, dst_dpid))
             return None 
 
-    def get_path(self, src, dst):
-        
-            if self.paths != None:
-                path = self.paths.get(src).get(dst)[0]
-                return path
-            else:
-                paths = self.get_dRL_paths()
-                path = paths.get(src).get(dst)[0]
-                return path
+    
 
     def get_dRL_paths(self):
 
@@ -344,7 +342,6 @@ class simple_Monitor(app_manager.RyuApp):
                 paths_dict = json.load(json_file)
                 paths_dict = ast.literal_eval(json.dumps(paths_dict))
                 self.paths = paths_dict
-                # print(self.paths)
                 return self.paths
 
     #-----------------------STATISTICS MODULE FUNCTIONS -------------------------
@@ -376,14 +373,6 @@ class simple_Monitor(app_manager.RyuApp):
                 dst_port = self.awareness.link_to_port[key][1]
                 # print(dst_sw,dst_port)
                 return (dst_sw, dst_port)
-
-    # def get_topology_data(self):
-    #     switch_list = get_switch(self.topology_api_app, None)
-    #     switches = [switch.dp.id for switch in switch_list]
-    #     links_list = get_link(self.topology_api_app, None)
-    #     #print links_list
-    #     links = [(link.src.dpid,link.dst.dpid,{'port':[link.src.port_no,link.dst.port_no]}) for link in links_list]
-    #     return switches, links
 
     def get_link_bw(self, file_bw, src_dpid, dst_dpid):
         fin = open(file_bw, "r")
@@ -484,35 +473,25 @@ class simple_Monitor(app_manager.RyuApp):
             value = (stat.tx_bytes, stat.rx_bytes, stat.rx_errors,
                      stat.duration_sec, stat.duration_nsec, stat.tx_errors, stat.tx_dropped, stat.rx_dropped, stat.tx_packets, stat.rx_packets)
             self.save_stats(self.port_stats, key, value, 5) # save switch's port information
-
+            if key ==(6,2):
+                print(self.port_stats[(6,2)][-1][7])
             if port_no != ofproto_v1_3.OFPP_LOCAL: # local openflow port       
                 if port_no != 1 and self.awareness.link_to_port :
                     # Get port speed and Save it
                     pre = 0
                     tmp = self.port_stats[key]
-                    if len(tmp) > 1:
+                    if len(tmp) > 1: # have pre value and now value
                         # Calculate with the tx_bytes and rx_bytes
                         pre = tmp[-2][0] + tmp[-2][1] # post Tx + Rx
                         period = self.get_period(tmp[-1][3], tmp[-1][4], tmp[-2][3], tmp[-2][4])
                     speed = self.get_speed(self.port_stats[key][-1][0] + self.port_stats[key][-1][1], pre, period) #speed in bits/s
                     self.save_stats(self.port_speed, key, speed, 5)
-
-                    # print('------------------------------------')
-                    # print ('key {0}, pre {1}, curr {2}, period {3}, speed {4}'.format(key,pre,self.port_stats[key][-1][0],period,speed))
                     file_bw = './bw_r.txt' # get link capacity
                     link_to_port = self.awareness.link_to_port
-                    # print("-------SW , PORT:", dpid, port_no)
-
                     for k in list(link_to_port.keys()): # link_to_port.keys()  --> (src_dpid,dst_dpid)
                         if k[0] == dpid:
                             if link_to_port[k][0] == port_no:
                                 dst_dpid = k[1]
-                            
-                                #FUNCIONA CON LISTA-----------------------------
-                                # list_dst_dpid = [k for k in list(link_to_port.keys()) if k[0] == dpid and link_to_port[k][0] == port_no]
-                                # if len(list_dst_dpid) > 0:
-                                #     dst_dpid = list_dst_dpid[0][1]
-                                # ----------------------------------------- 
                                 bw_link = float(self.get_link_bw(file_bw, dpid, dst_dpid)) #23nodos
                                 # bw_link = float(100) #resto de topologias todos los links tienen 10mbps de capacidad
                                 port_state = self.port_features.get(dpid).get(port_no)
@@ -527,25 +506,25 @@ class simple_Monitor(app_manager.RyuApp):
         # print("stats time {0}".format(time.time()-a))
 
 
-    @set_ev_cls(ofp_event.EventOFPPortStatus, MAIN_DISPATCHER)
-    def port_status_handler(self, ev):
-        """
-            Handle the port status changed event.
-        """
-        msg = ev.msg
-        ofproto = msg.datapath.ofproto
-        reason = msg.reason
-        dpid = msg.datapath.id
-        port_no = msg.desc.port_no
+    # @set_ev_cls(ofp_event.EventOFPPortStatus, MAIN_DISPATCHER)
+    # def port_status_handler(self, ev):
+    #     """
+    #         Handle the port status changed event.
+    #     """
+    #     msg = ev.msg
+    #     ofproto = msg.datapath.ofproto
+    #     reason = msg.reason
+    #     dpid = msg.datapath.id
+    #     port_no = msg.desc.port_no
 
-        reason_dict = {ofproto.OFPPR_ADD: "added",
-                       ofproto.OFPPR_DELETE: "deleted",
-                       ofproto.OFPPR_MODIFY: "modified", }
+    #     reason_dict = {ofproto.OFPPR_ADD: "added",
+    #                    ofproto.OFPPR_DELETE: "deleted",
+    #                    ofproto.OFPPR_MODIFY: "modified", }
 
-        if reason in reason_dict:
-            print ("switch%d: port %s %s" % (dpid, reason_dict[reason], port_no))
-        else:
-            print ("switch%d: Illegal port state %s %s" % (dpid, port_no, reason))
+    #     if reason in reason_dict:
+    #         print ("switch%d: port %s %s" % (dpid, reason_dict[reason], port_no))
+    #     else:
+    #         print ("switch%d: Illegal port state %s %s" % (dpid, port_no, reason))
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def packet_in_handler(self, ev):
@@ -561,77 +540,12 @@ class simple_Monitor(app_manager.RyuApp):
 
     
     def show_stat(self, _type):
-        '''
-            Show statistics information according to data type.
-            _type: 'port' / 'flow'
-        '''
         if setting.TOSHOW is False:
             return
-
-        
-        if _type == 'flow' and self.awareness.link_to_port:
-            bodies = self.stats['flow']   
-            print('datapath         ''   ip_src        ip-dst      '
-                  'out-port packets  bytes  flow-speed(b/s)')
-            print('---------------- ''  -------- ----------------- '
-                  '-------- -------- -------- -----------')
-            for dpid in bodies.keys():
-                for stat in sorted(
-                    [flow for flow in bodies[dpid] if flow.priority == 1],
-                    # key=lambda flow: (flow.match.get('in_port'),
-                    key=lambda flow: (flow.match.get('ipv4_src'),
-                                      flow.match.get('ipv4_dst'))):
-                    key = (stat.match.get('ipv4_src'), stat.match.get('ipv4_dst'))
-                    # print('{:>016} {:>9} {:>17} {:>8} {:>8} {:>8} {:>8.1f} {:>8}'.format( #with loss
-                    print('{:>016} {:>9} {:>17} {:>8} {:>8} {:>8} {:>8.1f}'.format(
-                        dpid, 
-                        stat.match['ipv4_src'], stat.match['ipv4_dst'], #flow match
-                        stat.instructions[0].actions[0].port, #port
-                        stat.packet_count, stat.byte_count,
-                        abs(self.flow_speed[dpid][key][-1])))#,
-                        # abs(self.flow_loss[dpid][  #flow loss
-                        #     (stat.match.get('ipv4_src'),stat.match.get('ipv4_dst'))][-1])))
-            print()
-
-        if _type == 'port': #and self.awareness.link_to_port:
-            bodies = self.stats['port'] 
-            print('\ndatapath  port '
-                '   rx-pkts     rx-bytes ''   tx-pkts     tx-bytes '
-                ' port-bw(Kb/s)  port-speed(Kb/s)  port-freebw(Kb/s) '
-                ' port-state  link-state')
-            print('--------  ----  '
-                '---------  -----------  ''---------  -----------  '
-                '-------------  ---------------  -----------------  '
-                '----------  ----------')
-            format_ = '{:>8}  {:>4}  {:>9}  {:>11}  {:>9}  {:>11}  {:>13.3f}  {:>15.5f}  {:>17.5f}  {:>10}  {:>10}  {:>10}  {:>10}'
-            # format_ = '{:>8}  {:>4}  {:>9}  {:>11}  {:>9}  {:>11}  {:>13}  {:>15}  {:>10}  {:>10}'
-
-            for dpid in sorted(bodies.keys()):
-                for stat in sorted(bodies[dpid], key=attrgetter('port_no')):
-                    if stat.port_no != 1:
-                        if stat.port_no != ofproto_v1_3.OFPP_LOCAL: #port 1 is the host output
-                            if self.free_bandwidth[dpid]:
-                                self.logger.info(format_.format(
-                                    dpid, stat.port_no, #datapath , num_port
-                                    stat.rx_packets, stat.rx_bytes,
-                                    stat.tx_packets, stat.tx_bytes,
-                                    self.port_features[dpid][stat.port_no][2], #port_bw (kb/s) MAX
-                                    abs(self.port_speed[(dpid, stat.port_no)][-1]/1000.0), #port_speed Kbits/s
-                                    self.free_bandwidth[dpid][stat.port_no], #port_free bw kb/s
-                                    self.port_features[dpid][stat.port_no][0], #port state
-                                    self.port_features[dpid][stat.port_no][1], #link state
-                                    stat.rx_dropped, stat.tx_dropped)) 
-            print() 
-
         if _type == 'link':
             print('\nnode1  node2  used-bw(Kb/s)   free-bw(Kb/s)    latency(ms)     loss')
-            print('-----  -----  --------------   --------------   -----------    ---- ')
-            # print('\nnode1  node2  total-bw(Kb/s)  used-bw(Kb/s)    free-bw(Kb/s)   latency     loss')
-            # print('-----  -----  --------------  ---------------  --------------  ----------  ---- ')
-            
+            print('-----  -----  --------------   --------------   -----------    ---- ') 
             format_ = '{:>5}  {:>5} {:>14.5f}  {:>14.5f}  {:>12}  {:>12}'
-            # format_ = '{:>5}  {:>5}  {:>13.5f}  {:>14.5f}  {:>14.5f}  {:>10}  {:>4}'
-            
             links_in = []
             for link, values in sorted(self.manager.net_info.items()):
                 links_in.append(link)
@@ -642,4 +556,4 @@ class simple_Monitor(app_manager.RyuApp):
                         values[0], values[1], values[2]))
 
             
-            # print()_
+
