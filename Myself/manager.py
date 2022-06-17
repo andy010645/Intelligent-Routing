@@ -58,12 +58,15 @@ class Manager(app_manager.RyuApp):
                     tmp1 = self.monitor.port_stats[key1]
                     tx_bytes_src = tmp1[-1][0]
                     tx_pkts_src = tmp1[-1][8]
+                    tx_pkts_src_period = tmp1[-1][8] - tmp1[0][8]
 
                     key2 = self.monitor.get_sw_dst(dp, stat.port_no)
                     tmp2 = self.monitor.port_stats[key2]
                     rx_bytes_dst = tmp2[-1][1]
                     rx_pkts_dst = tmp2[-1][9]
-                    loss_port = float(tx_pkts_src - rx_pkts_dst) / tx_pkts_src #loss rate
+                    rx_pkts_dst_period = tmp2[-1][9] - tmp2[0][9]
+
+                    loss_port = float(tx_pkts_src_period - rx_pkts_dst_period) / tx_pkts_src_period #loss rate
                     values = (loss_port, key2)
                     self.monitor.save_stats(self.monitor.port_loss[dp], key1, values, 5)
 

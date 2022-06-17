@@ -51,12 +51,12 @@ def DRL_thread():
                     if len(brain[i][j].memory) > brain[i][j].batch_size:
                         
                         brain[i][j].update()
-                        if step % 25 == 0:
+                        if step % 30 == 0:
                             print("network update")
                             brain[i][j].update_target()
-                        if step % 2000 == 0:
+                        if step % 3000 == 0:
                             brain[i][j].save_model(i,j)
-        if step == 2000:
+        if step == 3000:
             return
         # write route path
         with open('./drl_paths.json','w') as json_file:
@@ -75,7 +75,7 @@ def DRL_thread():
         if time_end - time_in < 10 :
             time.sleep(10 - (time_end - time_in)) # wait for monitor period
         if epsilon > epsilon_final:
-            epsilon -= (epsilon_ini - epsilon_final)/2000
+            epsilon = epsilon*0.99
 
 
 def DRL_thread_rank():
@@ -119,13 +119,13 @@ def DRL_thread_rank():
                     if len(brain[i][j].memory) > brain[i][j].batch_size:
                         brain[i][j].update()
                         
-                        if step % 50 == 0:
+                        if step % 30 == 0:
                             print("network update")
                             brain[i][j].update_target()
-                        if step % 2000 == 0:
+                        if step % 3000 == 0:
                             brain[i][j].save_model(i,j)
 
-        if step == 2000:
+        if step == 3000:
             return
 
         # write route path
@@ -205,13 +205,8 @@ def path_metrics_to_reward():
             rewards_dic.setdefault(j,{})
             for m in metrics:
                 if m == metrics[0]:
-                    bwd_cost = [] #since the DRL will minimize reward function, we do 1/bwd for such function
+                    bwd_cost = []
                     for val in paths_metrics_dict[str(i)][str(j)][m][0]:
-                        # if val > 0.001: #ensure minimum bwd available
-                        #     temp = 1/val
-                        #     bwd_cost.append(round(temp, 15))
-                        # else:
-                        #     bwd_cost.append(1/0.001)
                         bwd_cost.append(round(val, 15))
                     paths_metrics_dict[str(i)][str(j)][m][0] = bwd_cost
                     met_norm = [normalize(met_val, 0, 100, min(paths_metrics_dict[str(i)][str(j)][m][0]), max(paths_metrics_dict[str(i)][str(j)][m][0])) for met_val in paths_metrics_dict[str(i)][str(j)][m][0]]
@@ -251,13 +246,8 @@ def path_metrics_to_reward_rank():
             rewards_dic.setdefault(j,{})
             for m in metrics:
                 if m == metrics[0]:
-                    bwd_cost = [] #since the DRL will minimize reward function, we do 1/bwd for such function
+                    bwd_cost = [] 
                     for val in paths_metrics_dict[str(i)][str(j)][m][0]:
-                        # if val > 0.001: #ensure minimum bwd available
-                        #     temp = 1/val
-                        #     bwd_cost.append(round(temp, 15))
-                        # else:
-                        #     bwd_cost.append(1/0.001)
                         bwd_cost.append(round(val, 15))
                     paths_metrics_dict[str(i)][str(j)][m][0] = bwd_cost
                     met_norm = [normalize(met_val, 0, 100, min(paths_metrics_dict[str(i)][str(j)][m][0]), max(paths_metrics_dict[str(i)][str(j)][m][0])) for met_val in paths_metrics_dict[str(i)][str(j)][m][0]]
@@ -285,24 +275,34 @@ def normalize(value, minD, maxD, min_val, max_val):
                     
 
 def get_state(): # get the current network state
+    state = np.zeros((37,3))
+
     try:
         file = "./net_info.csv"
         data = pd.read_csv(file)
-        state = np.zeros((37,3))
         for i in range(37):
-                state[i][0] = data["bwd"][i]
-                state[i][1] = data["delay"][i]
-                state[i][2] = data["pkloss"][i]
+            state[i][0] = data["bwd"][i]
+            state[i][1] = data["delay"][i]
+            state[i][2] = data["pkloss"][i]
+        state_0 = np.array([100000,100000,100000,100000,100000,100000,100000,25000,25000,100000,
+25000,1550,100000,100000,25000,25000,1550,1550,100000,25000,
+100000,25000,25000,100000,25000,100000,100000,100000,100000,1550,
+100000,25000,25000,100000,25000,25000,25000])
+        state = np.insert(state, 0, values=state_0, axis=1)
         return state
     except:
         time.sleep(0.35)
         file = "./net_info.csv"
         data = pd.read_csv(file)
-        state = np.zeros((37,3))
         for i in range(37):
-                state[i][0] = data["bwd"][i]
-                state[i][1] = data["delay"][i]
-                state[i][2] = data["pkloss"][i]
+            state[i][0] = data["bwd"][i]
+            state[i][1] = data["delay"][i]
+            state[i][2] = data["pkloss"][i]
+        state_0 = np.array([100000,100000,100000,100000,100000,100000,100000,25000,25000,100000,
+25000,1550,100000,100000,25000,25000,1550,1550,100000,25000,
+100000,25000,25000,100000,25000,100000,100000,100000,100000,1550,
+100000,25000,25000,100000,25000,25000,25000])
+        state = np.insert(state, 0, values=state_0, axis=1)
         return state
 
 def reward_rank(src, dst, paths_metrics_dict, act, metrics):
@@ -342,8 +342,7 @@ def reward(src, dst, paths_metrics_dict, act, metrics):
     beta1=1
     beta2=1
     beta3=1
-    cost_action=0
-    reward = cost_action + beta1*paths_metrics_dict[str(src)][str(dst)][metrics[0]][1][act] + beta2*paths_metrics_dict[str(src)][str(dst)][metrics[1]][1][act] + beta3*paths_metrics_dict[str(src)][str(dst)][metrics[2]][1][act]
+    reward = beta1*paths_metrics_dict[str(src)][str(dst)][metrics[0]][1][act] + beta2*paths_metrics_dict[str(src)][str(dst)][metrics[1]][1][act] + beta3*paths_metrics_dict[str(src)][str(dst)][metrics[2]][1][act]
     return round(reward,15)
 
 def state_to_action(): # 20 paths according src,dst
