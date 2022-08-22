@@ -1,15 +1,17 @@
-from mininet.net import Mininet
+﻿from mininet.net import Mininet
 from mininet.node import RemoteController
 from mininet.cli import CLI
 from mininet.log import setLogLevel, info
 from mininet.link import Link, Intf, TCLink
 import subprocess
+import time
+import os
 
 def Test_topo():
     net = Mininet(controller=RemoteController,link=TCLink)
 
     info("*** Add Controller ***\n")
-    net.addController("c0",controller=RemoteController,ip='192.168.221.130') # ip = '192.168.72.22'
+    net.addController("c0",controller=RemoteController,ip='192.168.72.7')
 
     info("*** Add Switch ***\n")
     s1 = net.addSwitch("s1")
@@ -123,65 +125,12 @@ def Test_topo():
     net.addLink(s17,s23,bw=25)
     net.addLink(s18,s21,bw=25)
     net.addLink(s20,s22,bw=25)
-
-
     info("*** Network Start ***\n")
     net.start()
-    # CLI(net)
-    # net.stop()
     return net
 
-def con(net):
-    h1 = net.get('h1')
-    h2 = net.get('h2')
-    h3 = net.get('h3')
-    h4 = net.get('h4')
-    h5 = net.get('h5')
-    h6 = net.get('h6')
-    h7 = net.get('h7')
-    h8 = net.get('h8')
-    h9 = net.get('h9')
-    h10 = net.get('h10')
-    h11 = net.get('h11')
-    h12 = net.get('h12')
-    h13 = net.get('h13')
-    h14 = net.get('h14')
-    h15 = net.get('h15')
-    h16 = net.get('h16')
-    h17 = net.get('h17')
-    h18 = net.get('h18')
-    h19 = net.get('h19')
-    h20 = net.get('h20')
-    h21 = net.get('h21')
-    h22 = net.get('h22')
-    h23 = net.get('h23')
-
-    h1.popen('ping 10.0.0.2 -c 1')
-    h2.popen('ping 10.0.0.1 -c 1')
-    h3.popen('ping 10.0.0.1 -c 1')
-    h4.popen('ping 10.0.0.1 -c 1')
-    h5.popen('ping 10.0.0.1 -c 1')
-    h6.popen('ping 10.0.0.1 -c 1')
-    h7.popen('ping 10.0.0.1 -c 1')
-    h8.popen('ping 10.0.0.1 -c 1')
-    h9.popen('ping 10.0.0.1 -c 1')
-    h10.popen('ping 10.0.0.1 -c 1')
-    h11.popen('ping 10.0.0.1 -c 1')
-    h12.popen('ping 10.0.0.1 -c 1')
-    h13.popen('ping 10.0.0.1 -c 1')
-    h14.popen('ping 10.0.0.1 -c 1')
-    h15.popen('ping 10.0.0.1 -c 1')
-    h16.popen('ping 10.0.0.1 -c 1')
-    h17.popen('ping 10.0.0.1 -c 1')
-    h18.popen('ping 10.0.0.1 -c 1')
-    h19.popen('ping 10.0.0.1 -c 1')
-    h20.popen('ping 10.0.0.1 -c 1')
-    h21.popen('ping 10.0.0.1 -c 1')
-    h22.popen('ping 10.0.0.1 -c 1')
-    h23.popen('ping 10.0.0.1 -c 1')
-
-
 def generate(net):
+
     print("enter TM")
     input_ = input()
     print("################################################")
@@ -190,7 +139,6 @@ def generate(net):
             net.get('h'+str(i)).popen('sh 23nodos/TM-'+input_+'/Servers/server_0'+str(i)+'.sh')
         else:
             net.get('h'+str(i)).popen('sh 23nodos/TM-'+input_+'/Servers/server_'+str(i)+'.sh')
-
     time.sleep(10)
     for i in range(1,24):
         if i < 10:
@@ -199,19 +147,39 @@ def generate(net):
             net.get('h'+str(i)).popen('sh 23nodos/TM-'+input_+'/Clients/client_'+str(i)+'.sh')
 
 
+def train(net):
+    tm_list = ['00','01','03','05','07','08','09','10','12','13','15','17','19','21','23']
+    for tm in tm_list:
+        print("################################################")
+        for i in range(1,24):
+            if i < 10:
+                net.get('h'+str(i)).popen('sh 23nodos/TM-'+tm+'/Servers/server_0'+str(i)+'.sh')
+            else:
+                net.get('h'+str(i)).popen('sh 23nodos/TM-'+tm+'/Servers/server_'+str(i)+'.sh')
+        time.sleep(10)
+        for i in range(1,24):
+            if i < 10:
+                net.get('h'+str(i)).popen('sh 23nodos/TM-'+tm+'/Clients/client_0'+str(i)+'.sh')
+            else:
+                net.get('h'+str(i)).popen('sh 23nodos/TM-'+tm+'/Clients/client_'+str(i)+'.sh')
+        time.sleep(1000)
+        os.popen("sudo killall -p iperf3")
+        print("next TM")
 
 if __name__ == "__main__":
     setLogLevel("info")
     net = Test_topo()
 
     while 1:
-        input = raw_input('CLI/GEN/CON/QUIT')
-        if input.upper() == 'CLI':
+        input_ = input('CLI/TRA/GEN/KILL/QUIT')
+        if input_.upper() == 'CLI':
             CLI(net)
-        elif input.upper() == 'GEN':
+        elif input_.upper() == 'TRA':
+            train(net)
+        elif input_.upper() == 'GEN':
             generate(net)
-        elif input.upper() == 'CON':
-            con(net)
-        elif input.upper() == 'QUIT':
+        elif input_.upper() == 'KILL':
+            os.system('sudo killall -9 iperf3')
+        elif input_.upper() == 'QUIT':
             net.stop()
             break
