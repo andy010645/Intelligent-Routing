@@ -1,6 +1,6 @@
 ## Traffic Generator
 
-# Install
+# Download
 
 在GEANT拓樸我們使用真實網路數據流量  
 前往https://totem.info.ucl.ac.be/dataset.html 下載dataset
