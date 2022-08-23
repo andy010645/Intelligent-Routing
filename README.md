@@ -29,7 +29,9 @@
 建議將mininet主機以及controller主機分開  
 進入Myself資料夾
 使用 ryu-manager --observe-link simple_monitor.py 執行controller  
-另外執行myDRL.py使用DRL agent進行轉發路徑的學習
+另外執行myDRL.py  
+輸入1為使用DRL agent進行轉發路徑的學習  
+輸入2為效能測試時使用
 
 
 

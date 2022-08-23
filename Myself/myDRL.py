@@ -362,7 +362,5 @@ if __name__ == "__main__":
     i = input()
     if i == str(1):
         DRL_thread()
-    elif i == str(2):
-        DRL_thread_rank()
     else:
         DRL_eval()
