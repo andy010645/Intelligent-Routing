@@ -17,4 +17,5 @@ python package requirement
 # How to use
 
 先執行generate_tms.py，再執行iperf3_scripts.py  
-就會成功產生TM資料夾
+就會成功產生TM資料夾  
+產生完TM資料夾後，將這些資料夾放入14nodos中
