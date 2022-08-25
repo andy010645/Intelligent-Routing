@@ -4,7 +4,7 @@ MONITOR_PERIOD = 10# #10For monitoring traffic
 
 DELAY_DETECTING_PERIOD = 8 #8
 
-TOSHOW = False	   # For showing information in terminal
+TOSHOW = True   # For showing information in terminal
 
 
 '''

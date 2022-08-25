@@ -40,7 +40,7 @@ class Agent:
         self.batch_size = 64
         self.action_size = 20
 
-        self.memory = deque(maxlen=1000)
+        self.memory = deque(maxlen=2000)
 
     def update_target(self):
         self.dqn_target.set_weights(self.dqn_model.get_weights())
@@ -48,10 +48,8 @@ class Agent:
     def get_action(self, state, epsilon):
         q_value = self.dqn_model(tf.convert_to_tensor(state, dtype=tf.float32))[0]
         if np.random.rand() <= epsilon:
-           # print("random")
             action = np.random.choice(self.action_size)
         else:
-           # print("greedy")
             action = np.argmax(q_value) 
         return action, q_value
 
@@ -61,6 +59,9 @@ class Agent:
     def save_model(self,i,j):
         tf.saved_model.save(self.dqn_model,"model/"+str(i)+"_"+str(j))
 
+    def load_model(self,i,j):
+        self.dqn_model = tf.saved_model.load("model/"+str(i)+"_"+str(j))
+
     def update(self):
         mini_batch = random.sample(self.memory, self.batch_size)
 
@@ -68,6 +69,7 @@ class Agent:
         actions = [i[1] for i in mini_batch]
         next_states = [i[2] for i in mini_batch]
         rewards = [i[3] for i in mini_batch]
+
 
         dqn_variable = self.dqn_model.trainable_variables
 
@@ -77,13 +79,16 @@ class Agent:
             rewards = tf.convert_to_tensor(rewards, dtype=tf.float32)
 
             actions = tf.convert_to_tensor(actions, dtype=tf.int32)
-            
+
             target_q = self.dqn_target(tf.convert_to_tensor(next_states))
             next_action = tf.argmax(target_q, axis=1)
             target_value = tf.reduce_sum(tf.one_hot(next_action, self.action_size) * target_q, axis=1)
             target_value = self.gamma * target_value + rewards
+
             main_q = self.dqn_model(tf.convert_to_tensor(states, dtype=tf.float32))
+
             main_value = tf.reduce_sum(tf.one_hot(actions, self.action_size) * main_q, axis=1)
+
             error = tf.losses.mean_squared_error(main_value, target_value)
 
         dqn_grads = tape.gradient(error, dqn_variable)

@@ -8,7 +8,7 @@ sudo python geant.py
  進入mininet command line介面
 * TRA   
  產生training所需要的流量
-* GEN   
+* TEST   
  使用TM-XX(00、01.....)資料產生網路流量
 * KILL   
  結束所有iperf3的process

@@ -11,7 +11,8 @@ def Test_topo():
     net = Mininet(controller=RemoteController,link=TCLink)
 
     info("*** Add Controller ***\n")
-    net.addController("c0",controller=RemoteController,ip='192.168.72.7')
+    #net.addController("c0",controller=RemoteController,ip='192.168.72.7')
+    net.addController("c0",controller=RemoteController,ip='127.0.0.1')
 
     info("*** Add Switch ***\n")
     s1 = net.addSwitch("s1")
@@ -176,7 +177,7 @@ if __name__ == "__main__":
             CLI(net)
         elif input_.upper() == 'TRA':
             train(net)
-        elif input_.upper() == 'GEN':
+        elif input_.upper() == 'TEST':
             generate(net)
         elif input_.upper() == 'KILL':
             os.system('sudo killall -9 iperf3')

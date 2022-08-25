@@ -160,7 +160,6 @@ class simple_Delay(app_manager.RyuApp):
             Explore LLDP packet and get the delay of link (fwd and reply).
         """
         msg = ev.msg
-        #print(msg.datapath.id)
         try:
             src_dpid, src_port_no = LLDPPacket.lldp_parse(msg.data)
             dpid = msg.datapath.id
@@ -170,7 +169,6 @@ class simple_Delay(app_manager.RyuApp):
             for port in self.sw_module.ports.keys():
                 if src_dpid == port.dpid and src_port_no == port.port_no:
                     delay = self.sw_module.ports[port].delay
-                    #print(port,"\t",delay)
                     self._save_lldp_delay(src=src_dpid, dst=dpid,
                                           lldpdelay=delay)
         except LLDPPacket.LLDPUnknownFormat as e:
@@ -189,8 +187,7 @@ class simple_Delay(app_manager.RyuApp):
                     link_delay = ((delay1 + delay2)*1000.0)/2 #saves in ms
                     link = (src, dst)
                     self.link_delay[link] = link_delay
-        # print(self.link_delay)
-        # print('Time link_delay', time.time()-i)
+
         
     def show_delay_statis(self):
         if self.awareness is None:

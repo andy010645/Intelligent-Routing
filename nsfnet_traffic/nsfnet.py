@@ -140,7 +140,7 @@ if __name__ == "__main__":
             CLI(net)
         elif input_.upper() == 'TRA':
             train(net)
-        elif input_.upper() == 'GEN':
+        elif input_.upper() == 'TEST':
             generate(net)
         elif input_.upper() == 'KILL':
             os.system('sudo killall -9 iperf3')

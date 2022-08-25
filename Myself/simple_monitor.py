@@ -473,8 +473,6 @@ class simple_Monitor(app_manager.RyuApp):
             value = (stat.tx_bytes, stat.rx_bytes, stat.rx_errors,
                      stat.duration_sec, stat.duration_nsec, stat.tx_errors, stat.tx_dropped, stat.rx_dropped, stat.tx_packets, stat.rx_packets)
             self.save_stats(self.port_stats, key, value, 5) # save switch's port information
-            if key ==(6,2):
-                print(self.port_stats[(6,2)][-1][7])
             if port_no != ofproto_v1_3.OFPP_LOCAL: # local openflow port       
                 if port_no != 1 and self.awareness.link_to_port :
                     # Get port speed and Save it

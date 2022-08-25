@@ -52,7 +52,6 @@ def DRL_thread():
                         
                         brain[i][j].update()
                         if step % 30 == 0:
-                            print("network update")
                             brain[i][j].update_target()
                         if step % 3000 == 0:
                             brain[i][j].save_model(i,j)
@@ -63,7 +62,6 @@ def DRL_thread():
             json.dump(drl_paths, json_file, indent=2)
 
         time_end = time.time()
-        print("calculate time:  ",time_end - time_in)
         state_memory = state
         reward_list.append(int(reward_all))
         path = 'output.txt'
@@ -120,7 +118,6 @@ def DRL_thread_rank():
                         brain[i][j].update()
                         
                         if step % 30 == 0:
-                            print("network update")
                             brain[i][j].update_target()
                         if step % 3000 == 0:
                             brain[i][j].save_model(i,j)
@@ -133,7 +130,7 @@ def DRL_thread_rank():
             json.dump(drl_paths, json_file, indent=2)
 
         time_end = time.time()
-        print("calculate time:  ",time_end - time_in)
+        #print("calculate time:  ",time_end - time_in)
         state_memory = state
         reward_list.append(int(reward_all))
         path = 'output.txt'
@@ -152,12 +149,16 @@ def DRL_eval():
     column, row = SIZE,SIZE
     brain = [[0]*row for _ in range(column)]
     print("load model...")
-    for i in range(1,SIZE):
-        for j in range(1,SIZE):
-            if i!=j:
-                brain[i][j] =  agent.Agent()
-                brain[i][j].load_model(i,j)
-                print("load model....   ",i,"\t",j)
+    try:
+        for i in range(1,SIZE):
+            for j in range(1,SIZE):
+                if i!=j:
+                    brain[i][j] =  agent.Agent()
+                    brain[i][j].load_model(i,j)
+    except:
+        print("No model, have to train model first")
+        return 
+    print("load model success....")
     all_path_list = state_to_action()
     print("Start eval")
 
@@ -176,7 +177,6 @@ def DRL_eval():
         with open('./drl_paths.json','w') as json_file:
             json.dump(drl_paths, json_file, indent=2)
         time_end = time.time()
-        print("eval time:  ",time_end - time_in)
         if time_end - time_in < setting.MONITOR_PERIOD :
             time.sleep(setting.MONITOR_PERIOD - (time_end - time_in)) # wait for monitor period
 
@@ -358,7 +358,7 @@ def state_to_action(): # 20 paths according src,dst
                 paths_20[i][j] = paths[str(i)][str(j)]
     return paths_20
 if __name__ == "__main__":
-    print("1 : learning phase Reward classic\n2 : learning phase Reward rank")
+    print("1 : learning phase Reward classic\n2 : Performance test")
     i = input()
     if i == str(1):
         DRL_thread()
