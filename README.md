@@ -2,6 +2,7 @@
 ## Mininet
 
 前往 https://github.com/mininet/mininet  
+git clone https://github.com/mininet/mininet  
 進入mininet/util 執行 ./install.sh  
 安裝完後可以執行 sudo mn 看看有沒有正確安裝
 
