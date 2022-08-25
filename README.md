@@ -2,8 +2,9 @@
 ## Mininet
 
 前往 https://github.com/mininet/mininet  
-照著指示安裝mininet  
-成功安裝mininet之後即可進入geant_traffic或nsfnet_traffic資料夾執行相關檔案
+進入mininet/util 執行 ./install.sh  
+安裝完後可以執行 sudo mn 看看有沒有正確安裝
+
 
 ## Controller
 
@@ -26,10 +27,12 @@
 
 ### ryu controller usage
 
-建議將mininet主機以及controller主機分開  
 進入Myself資料夾
 使用 ryu-manager --observe-link simple_monitor.py 執行controller  
-另外執行myDRL.py  
+
+### DRL learning
+
+執行myDRL.py 
 輸入1為使用DRL agent進行轉發路徑的學習  
 輸入2為效能測試時使用
 
