@@ -141,7 +141,7 @@ git clone https://github.com/andy010645/Intelligent-Routing
 ```
 cd Intelligent-Routing/geant_traffic
 ```
-在此資料夾會有一些前置作業，可以參考此資料夾裡的readme
+在此資料夾會有一些前置作業，可以參考此資料夾裡的readme  
 當前置作業完成後，使用 geant.py 建立mininet環境
 ```
 sudo python3 geant.py
