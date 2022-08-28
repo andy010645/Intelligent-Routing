@@ -22,7 +22,7 @@ j = 0
 
 for tm in tms:
     #FOR CREATING FOLDERS PER TRAFFIC MATRIX  
-    nameTM = 'TM-'+ str(int(tms_24_hours[j])+4)
+    nameTM = 'TM-'+ str(int(tms_24_hours[j]))
     print('------',nameTM)
     if not os.path.exists(nameTM):
         os.mkdir(nameTM)
