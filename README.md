@@ -1,41 +1,169 @@
 # Intelligent-Routing
-## Mininet
+Intelligent Routing via Deep Reinforcement Learning in Software Defined Network
+## Installation
+### Mininet
 
-前往 https://github.com/mininet/mininet  
-git clone https://github.com/mininet/mininet  
-進入mininet/util 執行 ./install.sh  
-安裝完後可以執行 sudo mn 看看有沒有正確安裝
+```
+git clone https://github.com/mininet/mininet 
+```
+成功下載下來後會有一個mininet資料夾
+進入mininet/util
+```
+cd mininet/util
+```
+執行安裝
+```
+./install.sh  
+```
+安裝完後可以進入terminal確認有無正確安裝
+```
+sudo mn
+```
 
 
-## Controller
+### Controller
 
-### ryu controller install
+```
+https://github.com/faucetsdn/ryu
+```
+成功下載下來後會有一個ryu資料夾
+進入ryu/ryu/topology
+```
+cd ryu/ryu/topology
+```
+裡面會有一個檔案為 switches.py
+我們需要對這個檔案做出一些修改
+* class PortData
+```python3 
+class PortData(object):
+    def __init__(self, is_down, lldp_data):
+        super(PortData, self).__init__()
+        self.is_down = is_down
+        self.lldp_data = lldp_data
+        self.timestamp = None
+        self.sent = 0
+```
+在後面在增加一行code
+```python3
+class PortData(object):
+    def __init__(self, is_down, lldp_data):
+        super(PortData, self).__init__()
+        self.is_down = is_down
+        self.lldp_data = lldp_data
+        self.timestamp = None
+        self.sent = 0
+        self.delay = 0
+```
 
-先去[ryu controller github](https://github.com/faucetsdn/ryu) 下載code
-載完後進入ryu資料夾，執行pip3 install .
+* lldp_packet_in_handler
+```python3
+@set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
+def lldp_packet_in_handler(self, ev):
+    if not self.link_discovery:
+        return
 
-在此ryu版本裡會缺少我們需要的一些function  [ryu controller fix code](https://github.com/muzixing/ryu/blob/master/ryu/topology/switches.py)  
-所以我們需要自己對此做出修改
+    msg = ev.msg
+    try:
+        src_dpid, src_port_no = LLDPPacket.lldp_parse(msg.data)
+    except LLDPPacket.LLDPUnknownFormat:
+        # This handler can receive all the packets which can be
+        # not-LLDP packet. Ignore it silently
+        return
 
-1. 進入ryu/ryu/topology/switches.py
-2. class PortData 裡的init多加一個self.delay = 0  
-![](https://i.imgur.com/E9RPmRz.png)
-3. 在lldp_packet_in_handler開頭先新增一行code : recv_timestamp = time.time()
-4. 將fix版本code的714行後的get the lldp delay code 複製  
-![image](https://user-images.githubusercontent.com/69691891/145552471-a11fbc18-a494-4e34-982c-6e88a861a27a.png)
-5. 將剛剛複製好的code貼到791行
-6. 上述動作執行完成後，回到ryu資料夾並執行pip3 install .
+    dst_dpid = msg.datapath.id
+    if msg.datapath.ofproto.OFP_VERSION == ofproto_v1_0.OFP_VERSION:
+        dst_port_no = msg.in_port
+    elif msg.datapath.ofproto.OFP_VERSION >= ofproto_v1_2.OFP_VERSION:
+        dst_port_no = msg.match['in_port']
+    else:
+        LOG.error('cannot accept LLDP. unsupported version. %x',
+                  msg.datapath.ofproto.OFP_VERSION)
 
-### ryu controller usage
+    src = self._get_port(src_dpid, src_port_no)
+    if not src or src.dpid == dst_dpid:
+        return
+```
+修改為
+```python3
+@set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
+def lldp_packet_in_handler(self, ev):
+    recv_timestamp = time.time()
+    if not self.link_discovery:
+        return
 
-進入Myself資料夾
-使用 ryu-manager --observe-link simple_monitor.py 執行controller  
+    msg = ev.msg
+    try:
+        src_dpid, src_port_no = LLDPPacket.lldp_parse(msg.data)
+    except LLDPPacket.LLDPUnknownFormat:
+        # This handler can receive all the packets which can be
+        # not-LLDP packet. Ignore it silently
+        return
 
-### DRL learning
+    dst_dpid = msg.datapath.id
+    if msg.datapath.ofproto.OFP_VERSION == ofproto_v1_0.OFP_VERSION:
+        dst_port_no = msg.in_port
+    elif msg.datapath.ofproto.OFP_VERSION >= ofproto_v1_2.OFP_VERSION:
+        dst_port_no = msg.match['in_port']
+    else:
+        LOG.error('cannot accept LLDP. unsupported version. %x',
+                  msg.datapath.ofproto.OFP_VERSION)
 
-執行myDRL.py 
-輸入1為使用DRL agent進行轉發路徑的學習  
-輸入2為效能測試時使用
+    for port in self.ports.keys():
+        if src_dpid == port.dpid and src_port_no == port.port_no:
+            send_timestamp = self.ports[port].timestamp
+            if send_timestamp:
+                self.ports[port].delay = recv_timestamp - send_timestamp
+    src = self._get_port(src_dpid, src_port_no)
+    if not src or src.dpid == dst_dpid:
+        return
+```
+執行完上述動作後，回到ryu資料夾進行安裝
+```
+python3 setup.py install
+```
+安裝完成後
+```
+pip3 unstall .
+```
+結束ryu controller的安裝
+可以在terminal確認有無正確安裝
+```
+ryu-manager
+```
+
+## Intelligent-Routing implement steps
+
+```
+git clone https://github.com/andy010645/Intelligent-Routing
+```
+成功下載後會有一個Intelligent-Routing資料夾
+進入Intelligent-Routing/geant_traffic
+```
+cd Intelligent-Routing/geant_traffic
+```
+在此資料夾會有一些前置作業，可以參考此資料夾裡的readme
+當前置作業完成後，使用 geant.py 建立mininet環境
+```
+sudo python3 geant.py
+```
+當mininet啟動完成後我們開始啟動ryu-controller
+進入Intelligent-Routing/ours
+
+```
+cd Intelligent-Routing/ours
+```
+執行controller
+```
+ryu-manager --observe-link simple_monitor.py
+```
+當controller成功啟動後，就可以開始在mininet環境傳輸流量
+當訓練流量開始後執行我們的agent
+```
+python3 myDRL.py 
+```
+輸入1讓DRL agent進行轉發路徑的學習  
+當訓練完成後，可以輸入2進行效能測試模式
+
 
 
 
