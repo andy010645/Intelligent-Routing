@@ -1,5 +1,6 @@
 # Intelligent-Routing
 Intelligent Routing via Deep Reinforcement Learning in Software Defined Network
+Ubuntu 20.04
 ## Installation
 ### Mininet
 
